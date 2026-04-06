@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 11
+names: ['E-waste', 'Metal-waste', 'bottles', 'cardboard', 'cups', 'organic-waste', 'other-trash', 'paper', 'plastic-waste', 'trash', 'trashbin']
+
+roboflow:
+  workspace: ashish-patel-ids8b
+  project: waste-detect-0nyzr-cg3t8
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/ashish-patel-ids8b/waste-detect-0nyzr-cg3t8/dataset/1
