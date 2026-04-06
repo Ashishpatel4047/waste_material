@@ -1,0 +1,26 @@
+# C:\Users\91840\waste_material\data.yml
+path: C:/Users/91840/waste_material/dataset
+train: train/images 
+val: valid/images   
+test: test/images  
+
+# Index 6 error matlab kam se kam 7-8 classes honi chahiye
+names:
+  0: Plastic
+  1: Paper
+  2: Metal
+  3: Glass
+  4: Trash
+  5: Cardboard
+  6: Organic
+  7: E-waste
+  8: Metal-waste
+  9: bottles
+  10: cardboard
+  11: cups
+  12: organic-waste
+  13: other-trash
+  14: paper
+  15: plastic-waste
+  16: trash
+  17: trashbin

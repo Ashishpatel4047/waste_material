@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+
+dataset/
+runs/
+output/
+weights/
+
+*.jpg
+*.png
+*.jpeg
+
+*.pt
+
+temp.*
