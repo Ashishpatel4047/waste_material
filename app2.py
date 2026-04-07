@@ -1,24 +1,29 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, jsonify, render_template
 from ultralytics import YOLO
 import os
 import cv2
 import numpy as np
+import uuid
 
 app = Flask(__name__)
 
-# 🔥 Lazy loading (RAM bachane ke liye)
+# 🔥 Lazy loading (RAM optimize)
 model = None
 
 def load_model():
     global model
     if model is None:
-        print("🔄 Loading lightweight model...")
-        model = YOLO("yolov8n.pt")  # ✅ nano model (lightweight)
+        print("🔄 Loading YOLO model...")
+        model = YOLO("yolov8n.pt")  # lightweight model
         print("✅ Model loaded")
+
+# Upload folder
+UPLOAD_FOLDER = "static"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def home():
-    return "🚀 YOLO App Running on Render!"
+    return render_template("index.html")
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -28,12 +33,13 @@ def predict():
     if not file:
         return jsonify({"error": "No file uploaded"})
 
-    # Read image
-    img_bytes = file.read()
-    np_arr = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    # Save file
+    filename = f"{uuid.uuid4().hex}.jpg"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
 
-    # Resize image (RAM optimize)
+    # Read image
+    img = cv2.imread(filepath)
     img = cv2.resize(img, (640, 640))
 
     # Prediction
@@ -44,6 +50,7 @@ def predict():
         for box in r.boxes:
             cls = int(box.cls[0])
             conf = float(box.conf[0])
+
             detections.append({
                 "class": model.names[cls],
                 "confidence": conf
@@ -54,7 +61,7 @@ def predict():
         "count": len(detections)
     })
 
-# ✅ IMPORTANT: Render ke liye correct port
+# ✅ Render ke liye
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
