@@ -1,53 +1,60 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
+from ultralytics import YOLO
 import os
 import cv2
-from detector import Detector
-import uuid
+import numpy as np
 
 app = Flask(__name__)
 
-model = Detector("weights/best.pt")
+# 🔥 Lazy loading (RAM bachane ke liye)
+model = None
 
-UPLOAD_FOLDER = "static"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+def load_model():
+    global model
+    if model is None:
+        print("🔄 Loading lightweight model...")
+        model = YOLO("yolov8n.pt")  # ✅ nano model (lightweight)
+        print("✅ Model loaded")
 
 @app.route('/')
-def index():
-    return render_template("index.html")
+def home():
+    return "🚀 YOLO App Running on Render!"
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    file = request.files['file']
+    load_model()
 
+    file = request.files.get('file')
     if not file:
-        return "No file uploaded"
+        return jsonify({"error": "No file uploaded"})
 
-    # unique filename
-    filename = f"{uuid.uuid4().hex}.jpg"
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
+    # Read image
+    img_bytes = file.read()
+    np_arr = np.frombuffer(img_bytes, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    img = cv2.imread(filepath)
+    # Resize image (RAM optimize)
+    img = cv2.resize(img, (640, 640))
 
-    # detect
-    detections = model.detect(img)
+    # Prediction
+    results = model(img)
 
-    # draw boxes
-    output_img = model.draw_detections(img, detections)
+    detections = []
+    for r in results:
+        for box in r.boxes:
+            cls = int(box.cls[0])
+            conf = float(box.conf[0])
+            detections.append({
+                "class": model.names[cls],
+                "confidence": conf
+            })
 
-    # save output image
-    output_path = os.path.join(UPLOAD_FOLDER, "output_" + filename)
-    cv2.imwrite(output_path, output_img)
+    return jsonify({
+        "detections": detections,
+        "count": len(detections)
+    })
 
-    # object names list
-    objects = [d["class_name"] for d in detections]
-
-    return render_template(
-        "index.html",
-        image_path=output_path,
-        objects=objects,
-        count=len(objects)
-    )
-
+# ✅ IMPORTANT: Render ke liye correct port
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port, debug=False)
